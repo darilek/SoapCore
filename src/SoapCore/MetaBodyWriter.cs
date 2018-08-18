@@ -122,6 +122,11 @@ namespace SoapCore
 				writer.WriteEndElement(); // xs:sequence
 				writer.WriteEndElement(); // xs:complexType
 				writer.WriteEndElement(); // xs:element
+
+				foreach (var fault in operation.Faults)
+				{
+					AddSchemaType(writer, fault.Type, fault.Name, false, fault.NameSpace );
+				}
 			}
 
 			while (_complexTypeToBuild.Count > 0)
@@ -303,6 +308,17 @@ namespace SoapCore
 				writer.WriteAttributeString("element", "tns:" + operation.Name + "Response");
 				writer.WriteEndElement(); // wsdl:part
 				writer.WriteEndElement(); // wsdl:message
+
+				foreach (var fault in operation.Faults)
+				{
+					writer.WriteStartElement("wsdl:message");
+					writer.WriteAttributeString("name", $"{BindingType}_{operation.Name}_{fault.Name}_FaultMessage");
+					writer.WriteStartElement("wsdl:part");
+					writer.WriteAttributeString("name", "detail");
+					writer.WriteAttributeString("element", $"tns:{fault.ElementName}");
+					writer.WriteEndElement();
+					writer.WriteEndElement();
+				}
 			}
 		}
 
@@ -320,6 +336,15 @@ namespace SoapCore
 				writer.WriteStartElement("wsdl:output");
 				writer.WriteAttributeString("message", $"tns:{BindingType}_{operation.Name}_OutputMessage");
 				writer.WriteEndElement(); // wsdl:output
+
+				foreach (var fault in operation.Faults)
+				{
+					writer.WriteStartElement("wsdl:fault");
+					writer.WriteAttributeString("name", fault.Name);
+					writer.WriteAttributeString("message", $"tns:{BindingType}_{operation.Name}_{fault.Name}_FaultMessage");
+					writer.WriteEndElement(); // wsdl:fault
+				}
+
 				writer.WriteEndElement(); // wsdl:operation
 			}
 			writer.WriteEndElement(); // wsdl:portType
@@ -356,6 +381,18 @@ namespace SoapCore
 				writer.WriteAttributeString("use", "literal");
 				writer.WriteEndElement(); // soap:body
 				writer.WriteEndElement(); // wsdl:output
+
+				// faults
+				foreach (var fault in operation.Faults)
+				{
+					writer.WriteStartElement("wsdl:fault");
+					writer.WriteAttributeString("name", fault.Name);
+					writer.WriteStartElement("soap:fault");
+					writer.WriteAttributeString("name", fault.Name);
+					writer.WriteAttributeString("use", "literal");
+					writer.WriteEndElement(); // soap:fault
+					writer.WriteEndElement(); // wsdl:fault
+				}
 
 				writer.WriteEndElement(); // wsdl:operation
 			}
